@@ -38,21 +38,24 @@ pipeline {
 
                 echo 'Building React frontend...'
                 bat 'powershell -ExecutionPolicy Bypass -Command "cd agri-oasis-market; npm run build"'
+
+                echo 'Checking if build folder exists...'
+                bat 'powershell -ExecutionPolicy Bypass -Command "cd agri-oasis-market; if (Test-Path build) { echo Build folder created successfully } else { echo ERROR: Build folder missing! }"'
             }
         }
 
         stage('Serve Frontend') {
             steps {
                 echo 'Serving frontend on port 3000...'
-                bat 'powershell -ExecutionPolicy Bypass -Command "cd agri-oasis-market; npx serve -s build -l %FRONTEND_PORT%"'
+                bat 'powershell -ExecutionPolicy Bypass -Command "cd agri-oasis-market; if (Test-Path build) { npx serve -s build -l %FRONTEND_PORT% } else { echo Build folder missing! Cannot serve. }"'
             }
         }
 
         stage('Verify Deployment') {
             steps {
-                echo 'Deployment complete!'
-                echo "Backend: http://localhost:%BACKEND_PORT%"
-                echo "Frontend: http://localhost:%FRONTEND_PORT%"
+                echo '✅ Deployment complete!'
+                echo "Backend running at: http://localhost:%BACKEND_PORT%"
+                echo "Frontend running at: http://localhost:%FRONTEND_PORT%"
             }
         }
     }
