@@ -19,7 +19,22 @@ pipeline {
         stage('Build Backend') {
             steps {
                 echo 'Building Spring Boot backend...'
-                bat 'cd backend && mvnw clean package -DskipTests'
+                bat 'cd backend && mvnw.cmd clean package -DskipTests'
+            }
+        }
+
+        stage('Run Backend') {
+            steps {
+                echo 'Starting backend on port 8085...'
+                // Find the JAR file and run it
+                bat '''
+                cd backend
+                for %%f in (target\\*.jar) do (
+                    set JARNAME=%%f
+                    echo Running backend jar %%f
+                    start cmd /k "java -jar %%f --server.port=%BACKEND_PORT%"
+                )
+                '''
             }
         }
 
@@ -27,13 +42,6 @@ pipeline {
             steps {
                 echo 'Building React frontend...'
                 bat 'cd agri-oasis-market && npm install && npm run build'
-            }
-        }
-
-        stage('Run Backend') {
-            steps {
-                echo 'Starting backend on port 8085...'
-                bat "start cmd /k \"cd backend && java -jar target\\*.jar --server.port=${BACKEND_PORT}\""
             }
         }
 
