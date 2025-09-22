@@ -7,8 +7,6 @@ pipeline {
         PATH = "${env.JAVA_HOME}\\bin;${env.NODE_HOME};${env.PATH}"
         BACKEND_PORT = "8085"
         FRONTEND_PORT = "3000"
-        MAVEN_LOCAL_REPO = "C:\\Users\\${env.USERNAME}\\.m2\\repository"
-        NPM_CACHE = "C:\\Users\\${env.USERNAME}\\AppData\\Roaming\\npm-cache"
     }
 
     stages {
@@ -19,52 +17,42 @@ pipeline {
             }
         }
 
-        stage('Build Backend & Frontend in Parallel') {
-            parallel {
-                stage('Build Backend') {
-                    steps {
-                        echo 'Building Spring Boot backend...'
-                        bat "cd backend && .\\mvnw.cmd clean package -DskipTests -Dmaven.repo.local=%MAVEN_LOCAL_REPO%"
-                    }
-                }
-
-                stage('Build Frontend') {
-                    steps {
-                        echo 'Installing frontend dependencies...'
-                        bat "cd agri-oasis-market && npm ci --cache %NPM_CACHE%"
-                        
-                        echo 'Building React frontend...'
-                        bat "cd agri-oasis-market && npm run build"
-                    }
-                }
+        stage('Build Backend') {
+            steps {
+                echo 'Building Spring Boot backend...'
+                bat 'cd backend && .\\mvnw.cmd clean package -DskipTests'
             }
         }
 
-        stage('Serve Backend & Frontend') {
+        stage('Run Backend') {
             steps {
-                echo 'Starting backend and serving frontend...'
-                // Run backend detached
+                echo 'Starting backend on port 8085...'
                 bat "start /B java -jar backend\\target\\backend-0.0.1-SNAPSHOT.jar --server.port=%BACKEND_PORT%"
-                
-                // Serve frontend detached
-                bat "start /B cmd /c cd agri-oasis-market && npx serve -s build -l %FRONTEND_PORT%"
+            }
+        }
+
+        stage('Build Frontend') {
+            steps {
+                echo 'Installing frontend dependencies...'
+                bat 'powershell -ExecutionPolicy Bypass -Command "cd agri-oasis-market; npm ci"'
+
+                echo 'Building React frontend...'
+                bat 'powershell -ExecutionPolicy Bypass -Command "cd agri-oasis-market; npm run build"'
+            }
+        }
+
+        stage('Serve Frontend') {
+            steps {
+                echo 'Serving frontend on port 3000...'
+                bat 'powershell -ExecutionPolicy Bypass -Command "cd agri-oasis-market; npx serve -s build -l %FRONTEND_PORT%"'
             }
         }
 
         stage('Verify Deployment') {
             steps {
                 echo 'Deployment complete!'
-                echo "Backend URL: http://localhost:%BACKEND_PORT%"
-                echo "Frontend URL: http://localhost:%FRONTEND_PORT%"
-            }
-        }
-
-        stage('Cleanup (Optional)') {
-            steps {
-                echo 'Stopping backend and frontend processes...'
-                // Stops backend and frontend processes to free ports for next build
-                bat 'taskkill /F /IM java.exe /T'
-                bat 'taskkill /F /IM node.exe /T'
+                echo "Backend: http://localhost:%BACKEND_PORT%"
+                echo "Frontend: http://localhost:%FRONTEND_PORT%"
             }
         }
     }
