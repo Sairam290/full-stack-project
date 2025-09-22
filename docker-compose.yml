@@ -1,0 +1,16 @@
+version: "3.8"
+services:
+  backend:
+    build: ./backend
+    ports:
+      - "8085:8085"
+    environment:
+      - SPRING_DATA_MONGODB_URI=mongodb+srv://saigaming980_db_user:agrioris%40123@cluster0.wszu5x5.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0
+
+  frontend:
+    build: ./agri-oasis-market
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+
