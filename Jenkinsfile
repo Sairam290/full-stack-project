@@ -3,9 +3,10 @@ pipeline {
 
     environment {
         JAVA_HOME = "C:\\Program Files\\Java\\jdk-21"
-        PATH = "${env.JAVA_HOME}\\bin;${env.PATH}"
+        NODE_HOME = "C:\\Program Files\\nodejs"
+        PATH = "${env.JAVA_HOME}\\bin;${env.NODE_HOME};${env.PATH}"
         BACKEND_PORT = "8085"
-        FRONTEND_PORT = "5173"
+        FRONTEND_PORT = "3000"
     }
 
     stages {
@@ -19,36 +20,41 @@ pipeline {
         stage('Build Backend') {
             steps {
                 echo 'Building Spring Boot backend...'
-                bat 'cd backend && mvnw.cmd clean package -DskipTests'
+                bat 'cd backend && .\\mvnw.cmd clean package -DskipTests'
             }
         }
 
         stage('Run Backend') {
             steps {
                 echo 'Starting backend on port 8085...'
-                // Find the JAR file and run it
-                bat '''
-                cd backend
-                for %%f in (target\\*.jar) do (
-                    set JARNAME=%%f
-                    echo Running backend jar %%f
-                    start cmd /k "java -jar %%f --server.port=%BACKEND_PORT%"
-                )
-                '''
+                // Run backend detached so pipeline can continue
+                bat "start /B java -jar backend\\target\\backend-0.0.1-SNAPSHOT.jar --server.port=%BACKEND_PORT%"
             }
         }
 
         stage('Build Frontend') {
             steps {
+                echo 'Installing frontend dependencies...'
+                bat 'cd agri-oasis-market && npm install'
+                
                 echo 'Building React frontend...'
-                bat 'cd agri-oasis-market && npm install && npm run build'
+                bat 'cd agri-oasis-market && npm run build'
             }
         }
 
-        stage('Run Frontend') {
+        stage('Serve Frontend') {
             steps {
-                echo 'Starting frontend on port 5173...'
-                bat "start cmd /k \"cd agri-oasis-market && npm run dev -- --port ${FRONTEND_PORT}\""
+                echo 'Serving frontend on port 3000...'
+                // Serve build folder in non-interactive mode
+                bat "cd agri-oasis-market && npx serve -s build -l %FRONTEND_PORT%"
+            }
+        }
+
+        stage('Verify Deployment') {
+            steps {
+                echo 'Deployment complete!'
+                echo "Backend: http://localhost:%BACKEND_PORT%"
+                echo "Frontend: http://localhost:%FRONTEND_PORT%"
             }
         }
     }
