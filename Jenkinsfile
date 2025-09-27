@@ -2,71 +2,32 @@ pipeline {
     agent any
 
     environment {
-        BACKEND_DIR = 'backend'
-        FRONTEND_DIR = 'frontend'
-        FRONTEND_PORT = '3000'
+        // Your Docker Hub username. Replace 'sairam290' with your actual username.
+        DOCKER_REGISTRY = 'sairam290'
     }
 
     stages {
-        stage('Checkout') {
+        stage('Deploy Locally') {
             steps {
-                git branch: 'main', url: 'https://github.com/Sairam290/fullstack-app.git'
-            }
-        }
-
-        stage('Build Backend') {
-            steps {
-                dir("${BACKEND_DIR}") {
-                    echo 'Building backend using Maven Wrapper...'
-                    bat 'mvnw.cmd clean package -DskipTests'
-                }
-            }
-        }
-
-        stage('Start Backend') {
-            steps {
-                dir("${BACKEND_DIR}") {
-                    echo 'Stopping previous backend processes (if any)...'
-                    bat '''
-                    for /f "tokens=2" %%i in ('tasklist /FI "IMAGENAME eq java.exe" /FO LIST ^| findstr /I "backend"') do taskkill /PID %%i /F
-                    '''
-                    echo 'Starting backend...'
-                    bat 'for %%f in (target\\*.jar) do set JAR_FILE=%%f & start /B java -jar %JAR_FILE%'
-                }
-            }
-        }
-
-        stage('Build Frontend') {
-            steps {
-                dir("${FRONTEND_DIR}") {
-                    echo 'Installing frontend dependencies...'
-                    bat 'npm install'
-                    echo 'Building frontend...'
-                    bat 'npm run build'
-                }
-            }
-        }
-
-        stage('Serve Frontend') {
-            steps {
-                dir("${FRONTEND_DIR}") {
-                    echo 'Stopping previous frontend processes (if any)...'
-                    bat '''
-                    for /f "tokens=2" %%i in ('tasklist /FI "IMAGENAME eq node.exe" /FO LIST ^| findstr /I "frontend"') do taskkill /PID %%i /F
-                    '''
-                    echo 'Serving frontend...'
-                    bat "start /B npx serve -s build -l %FRONTEND_PORT%"
-                }
+                echo 'Pulling the latest Docker images from Docker Hub...'
+                // Pulls the backend image from Docker Hub.
+                ps "docker pull ${DOCKER_REGISTRY}/cicdfullstackprojects-backend:latest"
+                // Pulls the frontend image from Docker Hub.
+                ps "docker pull ${DOCKER_REGISTRY}/cicdfullstackprojects-frontend:latest"
+                
+                echo 'Starting containers with Docker Compose...'
+                // Runs docker-compose using the specified YAML file.
+                // IMPORTANT: Replace 'C:\\path\\to\\your\\docker-compose.yml' with the actual path.
+                // Use double backslashes for the path in the Groovy string.
+                ps "docker-compose -f 'D:\\cicd full stack projects\\full-stack-project\\docker-compose.yml' up -d --force-recreate"
             }
         }
     }
-
+    
     post {
-        success {
-            echo 'CI/CD pipeline completed successfully!'
-        }
-        failure {
-            echo 'CI/CD pipeline failed!'
+        always {
+            // Cleans up the Jenkins workspace to save disk space after the job is done.
+            cleanWs()
         }
     }
 }
