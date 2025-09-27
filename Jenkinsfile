@@ -19,7 +19,7 @@ pipeline {
                 // Runs docker-compose using the specified YAML file.
                 // IMPORTANT: Replace 'C:\\path\\to\\your\\docker-compose.yml' with the actual path.
                 // Use double backslashes for the path in the Groovy string.
-                ps "docker-compose -f 'D:\\cicd full stack projects\\full-stack-project\\docker-compose.yml' up -d --force-recreate"
+                ps "C:\\Program Files (x86)\\Jenkins\\workspace\\My-App-CI-CD-Pipeline\\docker-compose.yml' up -d --force-recreate"
             }
         }
     }
